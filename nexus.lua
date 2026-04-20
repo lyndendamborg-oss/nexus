@@ -858,25 +858,24 @@ print("Nexus Client loaded -- Press F to toggle the menu (debug mode)")
 -- Debug toggle menu (no `processed` check, uses F key for reliability)
 Config.ToggleKey = Enum.KeyCode.F -- Change hotkey for testing!
 
+local lastToggle = 0
 UserInputService.InputBegan:Connect(function(inp, processed)
-    print("Input detected: ", inp.UserInputType, inp.KeyCode, "Processed:", processed)
     if inp.KeyCode == Config.ToggleKey then
-        print("Toggle key pressed! (", tostring(Config.ToggleKey), ")")
+        local now = tick()
+        if now - lastToggle < 0.3 then return end -- debounce: ignore if within 0.3s
+        lastToggle = now
+
         if win.Visible then
             tween(win, { Position = UDim2.new(0.5, -290, 0.6, -210), BackgroundTransparency = 1 }, 0.22)
             task.delay(0.22, function() win.Visible = false end)
         else
-            win.Visible                = true
+            win.Visible = true
             win.BackgroundTransparency = 1
-            win.Position               = UDim2.new(0.5, -290, 0.4, -210)
+            win.Position = UDim2.new(0.5, -290, 0.4, -210)
             tween(win, {
                 BackgroundTransparency = 1 - State.MenuOpacity,
-                Position               = UDim2.new(0.5, -290, 0.5, -210),
+                Position = UDim2.new(0.5, -290, 0.5, -210),
             }, 0.22)
         end
     end
 end)
-
--- Always start visible for debug (so you know UI works):
-win.Visible = true
-win.BackgroundTransparency = 1 - State.MenuOpacity
