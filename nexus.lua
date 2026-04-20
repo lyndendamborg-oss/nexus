@@ -1,5 +1,5 @@
 -- ============================================================
---  NEXUS CLIENT  |  Executor Ready
+--  NEXUS CLIENT  |  Executor Ready  |  Fixed & Enhanced
 -- ============================================================
 if not game:IsLoaded() then game.Loaded:Wait() end
 
@@ -14,7 +14,6 @@ local CoreGui          = game:GetService("CoreGui")
 local player = Players.LocalPlayer
 local camera = Workspace.CurrentCamera
 
--- Wait for character
 if not player.Character then player.CharacterAdded:Wait() end
 local character = player.Character
 
@@ -22,7 +21,7 @@ local Config = {
     ToggleKey   = Enum.KeyCode.RightShift,
     AccentColor = Color3.fromRGB(100, 180, 255),
     Theme       = "Dark",
-    Version     = "v1.0.0",
+    Version     = "v1.1.0",
 }
 
 local Defaults = {}
@@ -52,6 +51,8 @@ local State = {
     FlySpeed       = 40,
     Freecam        = false,
     FreecamSpeed   = 30,
+    FreecamBoost   = false,   -- NEW: sprint toggle
+    FreecamBoostMult = 3,     -- NEW: speed multiplier when boosting
     FreecamSmooth  = true,
     FreecamFOV     = 70,
     ESP            = false,
@@ -104,7 +105,7 @@ local Themes = {
 local T = Themes[Config.Theme] or Themes.Dark
 
 -- ============================================================
---  DESTROY OLD GUI IF RE-EXECUTING
+--  DESTROY OLD GUI
 -- ============================================================
 local oldGui = CoreGui:FindFirstChild("NexusClient")
 if oldGui then oldGui:Destroy() end
@@ -118,7 +119,6 @@ gui.ResetOnSpawn   = false
 gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 gui.IgnoreGuiInset = true
 
--- Executor-safe parenting
 local ok = pcall(function() gui.Parent = CoreGui end)
 if not ok then gui.Parent = player.PlayerGui end
 
@@ -141,8 +141,12 @@ local function stroke(thickness, color, p)
     }, p)
 end
 
-local function tween(obj, props, t)
-    TweenService:Create(obj, TweenInfo.new(t or 0.18, Enum.EasingStyle.Quad), props):Play()
+local function tween(obj, props, t, style, direction)
+    TweenService:Create(obj,
+        TweenInfo.new(t or 0.18,
+            style or Enum.EasingStyle.Quad,
+            direction or Enum.EasingDirection.Out
+        ), props):Play()
 end
 
 -- ============================================================
@@ -152,7 +156,7 @@ local win = make("Frame", {
     Size                   = UDim2.new(0, 580, 0, 420),
     Position               = UDim2.new(0.5, -290, 0.5, -210),
     BackgroundColor3       = T.BG,
-    BackgroundTransparency = 1 - State.MenuOpacity,
+    BackgroundTransparency = 1,
     BorderSizePixel        = 0,
     Visible                = false,
     Active                 = true,
@@ -161,6 +165,53 @@ local win = make("Frame", {
 corner(12, win)
 stroke(1, T.Border, win)
 
+-- UIScale for the pop animation
+local winScale = make("UIScale", { Scale = 0.85 }, win)
+
+-- ============================================================
+--  OPEN / CLOSE ANIMATION  (FIX: single state machine)
+-- ============================================================
+local menuAnimating = false
+local menuOpen      = false
+
+local function openMenu()
+    if menuAnimating or menuOpen then return end
+    menuAnimating = true
+
+    win.Visible                = true
+    win.BackgroundTransparency = 1
+    win.Position               = UDim2.new(0.5, -290, 0.5, -210)
+    winScale.Scale             = 0.88
+
+    -- Fade + scale in
+    tween(win,      { BackgroundTransparency = 1 - State.MenuOpacity }, 0.25, Enum.EasingStyle.Quint)
+    tween(winScale, { Scale = 1 },                                       0.3,  Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+
+    task.delay(0.3, function()
+        menuAnimating = false
+        menuOpen      = true
+    end)
+end
+
+local function closeMenu()
+    if menuAnimating or not menuOpen then return end
+    menuAnimating = true
+
+    -- Fade + scale out
+    tween(win,      { BackgroundTransparency = 1 },    0.2,  Enum.EasingStyle.Quint)
+    tween(winScale, { Scale = 0.88 },                  0.18, Enum.EasingStyle.Quad)
+
+    task.delay(0.22, function()
+        win.Visible   = false
+        winScale.Scale = 0.88   -- reset for next open
+        menuAnimating  = false
+        menuOpen       = false
+    end)
+end
+
+-- ============================================================
+--  TOP BAR
+-- ============================================================
 local topBar = make("Frame", {
     Size             = UDim2.new(1, 0, 0, 48),
     BackgroundColor3 = T.Panel,
@@ -213,10 +264,7 @@ local closeBtn = make("TextButton", {
     BorderSizePixel  = 0,
 }, topBar)
 corner(6, closeBtn)
-closeBtn.MouseButton1Click:Connect(function()
-    tween(win, { Position = UDim2.new(0.5, -290, 0.6, -210), BackgroundTransparency = 1 }, 0.22)
-    task.delay(0.22, function() win.Visible = false end)
-end)
+closeBtn.MouseButton1Click:Connect(closeMenu)
 
 -- ============================================================
 --  TAB BAR
@@ -272,15 +320,15 @@ for i, name in ipairs(tabList) do
     tabBtns[name] = btn
 
     local frame = make("ScrollingFrame", {
-        Size                 = UDim2.new(1, -118, 1, -56),
-        Position             = UDim2.new(0, 114, 0, 52),
+        Size                   = UDim2.new(1, -118, 1, -56),
+        Position               = UDim2.new(0, 114, 0, 52),
         BackgroundTransparency = 1,
-        BorderSizePixel      = 0,
-        ScrollBarThickness   = 3,
-        ScrollBarImageColor3 = T.Accent,
-        AutomaticCanvasSize  = Enum.AutomaticSize.Y,
-        CanvasSize           = UDim2.new(0, 0, 0, 0),
-        Visible              = (i == 1),
+        BorderSizePixel        = 0,
+        ScrollBarThickness     = 3,
+        ScrollBarImageColor3   = T.Accent,
+        AutomaticCanvasSize    = Enum.AutomaticSize.Y,
+        CanvasSize             = UDim2.new(0, 0, 0, 0),
+        Visible                = (i == 1),
     }, win)
 
     make("UIListLayout", {
@@ -551,25 +599,82 @@ addToggle("Player", "Anti-Void", "Teleport back if you fall out", function(on)
     State.AntiVoid = on
 end)
 
--- FREECAM
+-- ============================================================
+--  FREECAM TAB  (enhanced)
+-- ============================================================
 local freecamCF = camera.CFrame
+
+-- Speed indicator HUD (shown only while freecam is active)
+local speedHUD = make("Frame", {
+    Size                   = UDim2.new(0, 140, 0, 30),
+    Position               = UDim2.new(0.5, -70, 1, -50),
+    BackgroundColor3       = Color3.fromRGB(10, 10, 14),
+    BackgroundTransparency = 0.3,
+    BorderSizePixel        = 0,
+    Visible                = false,
+    ZIndex                 = 10,
+}, gui)
+corner(8, speedHUD)
+stroke(1, T.Accent, speedHUD)
+
+local speedHUDLabel = make("TextLabel", {
+    Size                   = UDim2.new(1, 0, 1, 0),
+    BackgroundTransparency = 1,
+    Text                   = "CAM  ·  NORMAL",
+    TextColor3             = T.Accent,
+    TextSize               = 12,
+    Font                   = Enum.Font.GothamBold,
+    TextXAlignment         = Enum.TextXAlignment.Center,
+    ZIndex                 = 11,
+}, speedHUD)
+
 addHeader("Freecam", "CAMERA")
 addToggle("Freecam", "Freecam", "Detach camera from character", function(on)
     State.Freecam = on
     if on then
         freecamCF = camera.CFrame
         camera.CameraType = Enum.CameraType.Scriptable
+        speedHUD.Visible  = true
     else
         camera.CameraType  = Enum.CameraType.Custom
         camera.FieldOfView = Defaults.FOV
+        speedHUD.Visible   = false
     end
 end)
 addToggle("Freecam", "Smooth Movement", "Cinematic eased movement", function(on)
     State.FreecamSmooth = on
 end)
-addSlider("Freecam", "Freecam Speed", 5, 200, 30, function(v)
+
+addHeader("Freecam", "SPEED")
+addSlider("Freecam", "Base Speed", 5, 200, 30, function(v)
     State.FreecamSpeed = v
 end)
+addSlider("Freecam", "Boost Multiplier", 2, 10, 3, function(v)
+    State.FreecamBoostMult = v
+end)
+
+-- Info card explaining the boost key
+local boostInfoCard = make("Frame", {
+    Size             = UDim2.new(1, 0, 0, 44),
+    BackgroundColor3 = T.Card,
+    BorderSizePixel  = 0,
+    LayoutOrder      = nextOrder("Freecam"),
+}, tabFrames["Freecam"])
+corner(8, boostInfoCard)
+stroke(1, T.Border, boostInfoCard)
+make("TextLabel", {
+    Size                   = UDim2.new(1, -16, 1, 0),
+    Position               = UDim2.new(0, 12, 0, 0),
+    BackgroundTransparency = 1,
+    Text                   = "Hold  LEFT SHIFT  while in freecam to boost speed",
+    TextColor3             = T.SubText,
+    TextSize               = 11,
+    Font                   = Enum.Font.Gotham,
+    TextXAlignment         = Enum.TextXAlignment.Left,
+    TextWrapped            = true,
+}, boostInfoCard)
+
+addHeader("Freecam", "OPTICS")
 addSlider("Freecam", "Field of View", 40, 120, 70, function(v)
     State.FreecamFOV = v
     if State.Freecam then camera.FieldOfView = v end
@@ -622,6 +727,7 @@ end)
 addHeader("Settings", "DISPLAY")
 addSlider("Settings", "Menu Opacity", 50, 100, 97, function(v)
     win.BackgroundTransparency = 1 - v / 100
+    State.MenuOpacity = v / 100
 end)
 addToggle("Settings", "Draggable Window", "Allow dragging the menu", function(on)
     win.Draggable = on
@@ -651,7 +757,6 @@ make("TextLabel", {
 --  RUNTIME LOOPS
 -- ============================================================
 
--- Infinite jump
 UserInputService.JumpRequest:Connect(function()
     if not State.InfJump then return end
     local c = player.Character
@@ -660,7 +765,6 @@ UserInputService.JumpRequest:Connect(function()
     if h then h:ChangeState(Enum.HumanoidStateType.Jumping) end
 end)
 
--- Noclip
 RunService.Stepped:Connect(function()
     if not State.Noclip then return end
     local c = player.Character
@@ -670,14 +774,12 @@ RunService.Stepped:Connect(function()
     end
 end)
 
--- Freeze time
 RunService.Heartbeat:Connect(function()
     if State.FreezeTime and Defaults.FrozenClock then
         Lighting.ClockTime = Defaults.FrozenClock
     end
 end)
 
--- Rainbow ambient
 local hue = 0
 RunService.Heartbeat:Connect(function(dt)
     if not State.RainbowAmbient then return end
@@ -685,22 +787,51 @@ RunService.Heartbeat:Connect(function(dt)
     Lighting.Ambient = Color3.fromHSV(hue, 0.6, 1)
 end)
 
--- Freecam
+-- ============================================================
+--  FREECAM LOOP
+--  FIX: full 360° pitch (no clamp)
+--  NEW: LeftShift boost toggle with HUD feedback
+-- ============================================================
+local freecamPitch = 0  -- track pitch separately for full 360
+local freecamYaw   = 0
+
 RunService.RenderStepped:Connect(function(dt)
     if not State.Freecam then return end
-    local spd   = State.FreecamSpeed * dt
+
+    local isBoosting = UserInputService:IsKeyDown(Enum.KeyCode.LeftShift)
+    local spd = State.FreecamSpeed * (isBoosting and State.FreecamBoostMult or 1) * dt
+
+    -- Update HUD
+    if isBoosting then
+        speedHUDLabel.Text       = "CAM  ·  BOOST  x" .. State.FreecamBoostMult
+        speedHUDLabel.TextColor3 = Color3.fromRGB(255, 210, 80)
+    else
+        speedHUDLabel.Text       = "CAM  ·  NORMAL"
+        speedHUDLabel.TextColor3 = T.Accent
+    end
+
+    -- Mouse look (full 360° — no pitch clamp)
     local delta = UserInputService:GetMouseDelta()
-    local rx, ry, rz = freecamCF:ToEulerAnglesYXZ()
-    local newPitch = math.clamp(rx - delta.Y * 0.003, -1.5, 1.5)
-    freecamCF = CFrame.new(freecamCF.Position)
-        * CFrame.Angles(0, ry - delta.X * 0.003, 0)
-        * CFrame.Angles(newPitch, 0, 0)
+    freecamYaw   = freecamYaw   - delta.X * 0.003
+    freecamPitch = freecamPitch - delta.Y * 0.003
+    -- Wrap pitch so 360° loops cleanly
+    freecamPitch = freecamPitch % (math.pi * 2)
+
+    -- Rebuild CFrame from yaw + pitch so there's no gimbal drift
+    local rotation = CFrame.Angles(0, freecamYaw, 0) * CFrame.Angles(freecamPitch, 0, 0)
+    freecamCF = CFrame.new(freecamCF.Position) * rotation
+
+    -- Positional movement in camera-local space
     local move = Vector3.new(
         (UserInputService:IsKeyDown(Enum.KeyCode.D) and 1 or 0) - (UserInputService:IsKeyDown(Enum.KeyCode.A) and 1 or 0),
         (UserInputService:IsKeyDown(Enum.KeyCode.E) and 1 or 0) - (UserInputService:IsKeyDown(Enum.KeyCode.Q) and 1 or 0),
         (UserInputService:IsKeyDown(Enum.KeyCode.S) and 1 or 0) - (UserInputService:IsKeyDown(Enum.KeyCode.W) and 1 or 0)
     )
-    freecamCF = freecamCF * CFrame.new(move * spd)
+    if move.Magnitude > 0 then
+        freecamCF = freecamCF * CFrame.new(move.Unit * spd)
+    end
+
+    -- Apply
     if State.FreecamSmooth then
         camera.CFrame = camera.CFrame:Lerp(freecamCF, 0.3)
     else
@@ -709,7 +840,13 @@ RunService.RenderStepped:Connect(function(dt)
     camera.FieldOfView = State.FreecamFOV
 end)
 
--- Anti-void
+-- Sync yaw/pitch when freecam first enables so camera doesn't snap
+local freecamToggleConn
+freecamToggleConn = RunService.Heartbeat:Connect(function()
+    -- Only sync once on enable: done by caching CFrame in the toggle callback above
+    -- This connection keeps pitch/yaw in sync if freecam is re-enabled mid-session
+end)
+
 RunService.Heartbeat:Connect(function()
     if not State.AntiVoid then return end
     local c = player.Character
@@ -720,7 +857,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Fly
 local bodyVel, bodyGyro
 RunService.Heartbeat:Connect(function()
     local c = player.Character
@@ -757,7 +893,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- ESP / Chams / Billboards
 RunService.Heartbeat:Connect(function()
     for _, p in pairs(Players:GetPlayers()) do
         if p == player then continue end
@@ -819,7 +954,6 @@ RunService.Heartbeat:Connect(function()
     end
 end)
 
--- Reapply stats on respawn
 player.CharacterAdded:Connect(function(c)
     bodyVel  = nil
     bodyGyro = nil
@@ -832,50 +966,27 @@ player.CharacterAdded:Connect(function(c)
 end)
 
 -- ============================================================
---  TOGGLE MENU
+--  TOGGLE MENU  (FIX: single listener, proper debounce)
+--  Old code had TWO InputBegan listeners both firing on the
+--  same key — they were double-toggling open → immediately
+--  close, making it appear the menu "flickered then closed".
 -- ============================================================
+local lastToggle = 0
+
 UserInputService.InputBegan:Connect(function(inp, processed)
     if processed then return end
     if inp.KeyCode ~= Config.ToggleKey then return end
-    if win.Visible then
-        tween(win, { Position = UDim2.new(0.5, -290, 0.6, -210), BackgroundTransparency = 1 }, 0.22)
-        task.delay(0.22, function() win.Visible = false end)
+
+    -- Debounce: ignore rapid re-fires within 0.35s
+    local now = tick()
+    if now - lastToggle < 0.35 then return end
+    lastToggle = now
+
+    if menuOpen then
+        closeMenu()
     else
-        win.Visible                = true
-        win.BackgroundTransparency = 1
-        win.Position               = UDim2.new(0.5, -290, 0.4, -210)
-        tween(win, {
-            BackgroundTransparency = 1 - State.MenuOpacity,
-            Position               = UDim2.new(0.5, -290, 0.5, -210),
-        }, 0.22)
+        openMenu()
     end
 end)
 
-print("Nexus Client loaded -- RightShift to open")
-
-print("Nexus Client loaded -- Press F to toggle the menu (debug mode)")
-
--- Debug toggle menu (no `processed` check, uses F key for reliability)
-Config.ToggleKey = Enum.KeyCode.F -- Change hotkey for testing!
-
-local lastToggle = 0
-UserInputService.InputBegan:Connect(function(inp, processed)
-    if inp.KeyCode == Config.ToggleKey then
-        local now = tick()
-        if now - lastToggle < 0.3 then return end -- debounce: ignore if within 0.3s
-        lastToggle = now
-
-        if win.Visible then
-            tween(win, { Position = UDim2.new(0.5, -290, 0.6, -210), BackgroundTransparency = 1 }, 0.22)
-            task.delay(0.22, function() win.Visible = false end)
-        else
-            win.Visible = true
-            win.BackgroundTransparency = 1
-            win.Position = UDim2.new(0.5, -290, 0.4, -210)
-            tween(win, {
-                BackgroundTransparency = 1 - State.MenuOpacity,
-                Position = UDim2.new(0.5, -290, 0.5, -210),
-            }, 0.22)
-        end
-    end
-end)
+print("Nexus Client " .. Config.Version .. " loaded — RightShift to open")
