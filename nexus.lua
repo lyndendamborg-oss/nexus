@@ -853,11 +853,15 @@ end)
 
 print("Nexus Client loaded -- RightShift to open")
 
--- IMPROVED TOGGLE MENU (Add this AFTER the existing InputBegan connection)
+print("Nexus Client loaded -- Press F to toggle the menu (debug mode)")
+
+-- Debug toggle menu (no `processed` check, uses F key for reliability)
+Config.ToggleKey = Enum.KeyCode.F -- Change hotkey for testing!
+
 UserInputService.InputBegan:Connect(function(inp, processed)
+    print("Input detected: ", inp.UserInputType, inp.KeyCode, "Processed:", processed)
     if inp.KeyCode == Config.ToggleKey then
-        print("Right Shift pressed! Processed: " .. tostring(processed))
-        if processed then return end
+        print("Toggle key pressed! (", tostring(Config.ToggleKey), ")")
         if win.Visible then
             tween(win, { Position = UDim2.new(0.5, -290, 0.6, -210), BackgroundTransparency = 1 }, 0.22)
             task.delay(0.22, function() win.Visible = false end)
@@ -872,3 +876,7 @@ UserInputService.InputBegan:Connect(function(inp, processed)
         end
     end
 end)
+
+-- Always start visible for debug (so you know UI works):
+win.Visible = true
+win.BackgroundTransparency = 1 - State.MenuOpacity
