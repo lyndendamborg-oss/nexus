@@ -852,3 +852,23 @@ UserInputService.InputBegan:Connect(function(inp, processed)
 end)
 
 print("Nexus Client loaded -- RightShift to open")
+
+-- IMPROVED TOGGLE MENU (Add this AFTER the existing InputBegan connection)
+UserInputService.InputBegan:Connect(function(inp, processed)
+    if inp.KeyCode == Config.ToggleKey then
+        print("Right Shift pressed! Processed: " .. tostring(processed))
+        if processed then return end
+        if win.Visible then
+            tween(win, { Position = UDim2.new(0.5, -290, 0.6, -210), BackgroundTransparency = 1 }, 0.22)
+            task.delay(0.22, function() win.Visible = false end)
+        else
+            win.Visible                = true
+            win.BackgroundTransparency = 1
+            win.Position               = UDim2.new(0.5, -290, 0.4, -210)
+            tween(win, {
+                BackgroundTransparency = 1 - State.MenuOpacity,
+                Position               = UDim2.new(0.5, -290, 0.5, -210),
+            }, 0.22)
+        end
+    end
+end)
