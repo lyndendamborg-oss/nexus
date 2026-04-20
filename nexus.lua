@@ -1161,3 +1161,35 @@ UserInputService.InputBegan:Connect(function(inp, processed)
 end)
 
 print("✓ Nexus Client "..Config.Version.." loaded — "..State.ToggleKeyName.." to open")
+-- Finish the broken AccentR slider and add G/B sliders
+        T.Accent = Color3.fromRGB(v, State.AccentG, State.AccentB) 
+    end)
+
+    addSlider("Settings", "AccentG", "Accent Green", 0, 255, 180, function(v)
+        State.AccentG = v
+        T.Accent = Color3.fromRGB(State.AccentR, v, State.AccentB)
+    end)
+
+    addSlider("Settings", "AccentB", "Accent Blue", 0, 255, 255, function(v)
+        State.AccentB = v
+        T.Accent = Color3.fromRGB(State.AccentR, State.AccentG, v)
+    end)
+
+-- ============================================================
+--  INPUT LISTENER (The "Open/Close" Trigger)
+-- ============================================================
+UserInputService.InputBegan:Connect(function(input, processed)
+    -- This ignores keypresses if you are typing in the game chat
+    if processed then return end 
+
+    if input.KeyCode == Config.ToggleKey then
+        if menuOpen then
+            closeMenu()
+        else
+            openMenu()
+        end
+    end
+end)
+
+-- Optional: Print to console so you know it loaded!
+print("Nexus Client Loaded! Press " .. Config.ToggleKeyName .. " to open.")
