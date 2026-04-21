@@ -2128,7 +2128,7 @@ local discordLabel = Instance.new("TextLabel")
 discordLabel.Size = UDim2.new(1, -20, 0, 24)
 discordLabel.Position = UDim2.new(0, 10, 0, 60)
 discordLabel.BackgroundTransparency = 1
-discordLabel.Text = "Join our Discord: [discord.gg](https://discord.gg/hcRpXPnHAE)"
+discordLabel.Text = "Join our Discord: (https://discord.gg/hcRpXPnHAE)"
 discordLabel.TextColor3 = Color3.fromRGB(140, 180, 255)
 discordLabel.TextWrapped = false
 discordLabel.Font = Enum.Font.Gotham
@@ -2167,7 +2167,7 @@ end)
 discordLabel.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 then
         if setclipboard then
-            setclipboard("[discord.gg](https://discord.gg/hcRpXPnHAE)")
+            setclipboard("(https://discord.gg/hcRpXPnHAE)")
         end
         discordLabel.TextColor3 = Color3.fromRGB(60, 200, 120)
         discordLabel.Text = "Copied Discord link!"
