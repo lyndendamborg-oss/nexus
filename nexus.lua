@@ -2068,6 +2068,15 @@ UserInputService.InputEnded:Connect(function(input, processed)
     end
 end)
 
+task.defer(function()
+    task.wait(0.5) -- give a short delay to ensure GUI and CoreGui are ready
+    openMenu()
+    menuOpen = true
+    win.Visible = true
+    win.BackgroundTransparency = 1 - (State.MenuOpacity / 100)
+    winScale.Scale = State.MenuScale / 100
+end)
+
 
 applyCharacterStats()
 Workspace.Gravity = State.Gravity
@@ -2076,6 +2085,5 @@ if State.NoParticles then setParticlesDisabled(true) end -- Apply particle state
 
 
 print("Nexus Client " .. Config.Version .. " loaded. Press " .. State.ToggleKeyName .. " to open.")
-openMenu()
 
 
