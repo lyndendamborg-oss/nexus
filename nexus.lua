@@ -2089,11 +2089,11 @@ hintBox.Name = "NexusHintBox"
 hintBox.IgnoreGuiInset = true
 hintBox.ResetOnSpawn = false
 hintBox.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-hintBox.Parent = CoreGui
+hintBox.Parent = game:GetService("CoreGui")
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 320, 0, 100)
-frame.Position = UDim2.new(0.5, -160, 0.8, -50)
+frame.Size = UDim2.new(0, 320, 0, 120)
+frame.Position = UDim2.new(0.5, -160, 0.8, -60)
 frame.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
 frame.BorderSizePixel = 0
 frame.Active = true
@@ -2111,7 +2111,7 @@ stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
 stroke.Parent = frame
 
 local label = Instance.new("TextLabel")
-label.Size = UDim2.new(1, -20, 1, -20)
+label.Size = UDim2.new(1, -20, 0, 40)
 label.Position = UDim2.new(0, 10, 0, 10)
 label.BackgroundTransparency = 1
 label.Text = "Press [Right Shift] to open/close the Nexus menu"
@@ -2119,7 +2119,23 @@ label.TextColor3 = Color3.fromRGB(230, 230, 240)
 label.TextWrapped = true
 label.Font = Enum.Font.GothamBold
 label.TextSize = 14
+label.TextXAlignment = Enum.TextXAlignment.Center
+label.TextYAlignment = Enum.TextYAlignment.Center
 label.Parent = frame
+
+-- ✨ Discord Invite Label
+local discordLabel = Instance.new("TextLabel")
+discordLabel.Size = UDim2.new(1, -20, 0, 24)
+discordLabel.Position = UDim2.new(0, 10, 0, 60)
+discordLabel.BackgroundTransparency = 1
+discordLabel.Text = "Join our Discord: [discord.gg](https://discord.gg/hcRpXPnHAE)"
+discordLabel.TextColor3 = Color3.fromRGB(140, 180, 255)
+discordLabel.TextWrapped = false
+discordLabel.Font = Enum.Font.Gotham
+discordLabel.TextSize = 13
+discordLabel.TextXAlignment = Enum.TextXAlignment.Center
+discordLabel.TextYAlignment = Enum.TextYAlignment.Center
+discordLabel.Parent = frame
 
 local closeBtn = Instance.new("TextButton")
 closeBtn.Size = UDim2.new(0, 24, 0, 24)
@@ -2146,7 +2162,22 @@ end)
 closeBtn.MouseButton1Click:Connect(function()
     frame:Destroy()
 end)
+
+-- Optional: clicking the Discord text copies the invite link
+discordLabel.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        if setclipboard then
+            setclipboard("[discord.gg](https://discord.gg/hcRpXPnHAE)")
+        end
+        discordLabel.TextColor3 = Color3.fromRGB(60, 200, 120)
+        discordLabel.Text = "Copied Discord link!"
+        task.wait(1.5)
+        discordLabel.Text = "Join our Discord: [discord.gg](https://discord.gg/hcRpXPnHAE)"
+        discordLabel.TextColor3 = Color3.fromRGB(140, 180, 255)
+    end
+end)
 -- === End Hint Box ===
+
 
 
 print("Nexus Client " .. Config.Version .. " loaded. Press " .. State.ToggleKeyName .. " to open.")
