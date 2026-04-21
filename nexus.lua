@@ -2074,4 +2074,6 @@ Workspace.Gravity = State.Gravity
 Lighting.ClockTime = State.TimeOfDay
 if State.NoParticles then setParticlesDisabled(true) end -- Apply particle state on load
 
+openMenu()
+
 print("Nexus Client " .. Config.Version .. " loaded. Press " .. State.ToggleKeyName .. " to open.")
