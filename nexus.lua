@@ -2076,6 +2076,6 @@ if State.NoParticles then setParticlesDisabled(true) end -- Apply particle state
 
 
 print("Nexus Client " .. Config.Version .. " loaded. Press " .. State.ToggleKeyName .. " to open.")
-
 openMenu()
+
 
