@@ -287,6 +287,20 @@ local function addWarning(tab,text)
 		TextXAlignment=Enum.TextXAlignment.Left,TextWrapped=true
 	},warn)
 end
+local lastToggle = 0
+UserInputService.InputBegan:Connect(function(input, processed)
+	if input.KeyCode == Config.ToggleKey and not processed then
+		local now = tick()
+		if now - lastToggle < 0.25 then return end
+		lastToggle = now
+
+		if win.Visible and win.BackgroundTransparency < 1 then
+			closeMenu()
+		else
+			openMenu()
+		end
+	end
+end)
 
 --============================================================
 --  CONTINUE IN NEXT MODULE ...
