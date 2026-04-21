@@ -2172,7 +2172,7 @@ discordLabel.InputBegan:Connect(function(input)
         discordLabel.TextColor3 = Color3.fromRGB(60, 200, 120)
         discordLabel.Text = "Copied Discord link!"
         task.wait(1.5)
-        discordLabel.Text = "Join our Discord: [discord.gg](https://discord.gg/hcRpXPnHAE)"
+        discordLabel.Text = "Join our Discord: (https://discord.gg/hcRpXPnHAE)"
         discordLabel.TextColor3 = Color3.fromRGB(140, 180, 255)
     end
 end)
