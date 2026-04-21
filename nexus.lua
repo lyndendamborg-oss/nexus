@@ -2083,6 +2083,71 @@ Workspace.Gravity = State.Gravity
 Lighting.ClockTime = State.TimeOfDay
 if State.NoParticles then setParticlesDisabled(true) end -- Apply particle state on load
 
+-- === Hint Box (separate from main GUI) ===
+local hintBox = Instance.new("ScreenGui")
+hintBox.Name = "NexusHintBox"
+hintBox.IgnoreGuiInset = true
+hintBox.ResetOnSpawn = false
+hintBox.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+hintBox.Parent = CoreGui
+
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 320, 0, 100)
+frame.Position = UDim2.new(0.5, -160, 0.8, -50)
+frame.BackgroundColor3 = Color3.fromRGB(20, 20, 26)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = hintBox
+
+local corner = Instance.new("UICorner")
+corner.CornerRadius = UDim.new(0, 10)
+corner.Parent = frame
+
+local stroke = Instance.new("UIStroke")
+stroke.Thickness = 1
+stroke.Color = Color3.fromRGB(100, 180, 255)
+stroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+stroke.Parent = frame
+
+local label = Instance.new("TextLabel")
+label.Size = UDim2.new(1, -20, 1, -20)
+label.Position = UDim2.new(0, 10, 0, 10)
+label.BackgroundTransparency = 1
+label.Text = "Press [Right Shift] to open/close the Nexus menu"
+label.TextColor3 = Color3.fromRGB(230, 230, 240)
+label.TextWrapped = true
+label.Font = Enum.Font.GothamBold
+label.TextSize = 14
+label.Parent = frame
+
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 24, 0, 24)
+closeBtn.Position = UDim2.new(1, -30, 0, 6)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
+closeBtn.TextSize = 14
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.Parent = frame
+
+local btnCorner = Instance.new("UICorner")
+btnCorner.CornerRadius = UDim.new(0, 6)
+btnCorner.Parent = closeBtn
+
+closeBtn.MouseEnter:Connect(function()
+    closeBtn.BackgroundColor3 = Color3.fromRGB(240, 80, 80)
+end)
+
+closeBtn.MouseLeave:Connect(function()
+    closeBtn.BackgroundColor3 = Color3.fromRGB(200, 60, 60)
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    frame:Destroy()
+end)
+-- === End Hint Box ===
+
 
 print("Nexus Client " .. Config.Version .. " loaded. Press " .. State.ToggleKeyName .. " to open.")
 
